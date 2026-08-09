@@ -1,0 +1,115 @@
+/* Feuille de style de la page intégrée en iframe.
+   Volontairement autonome et minimale : elle doit rester lisible quelle que
+   soit la taille du cadre alloué par Digipad. */
+
+:root {
+  --texte: #0f172a;
+  --texte-doux: #475569;
+  --primaire: #2563eb;
+  --primaire-fonce: #1d4ed8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body.embed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--texte);
+  font: 400 15px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+.embed__contenu {
+  width: 100%;
+  max-width: 520px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.embed__titre {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+  text-align: center;
+  word-break: break-word;
+}
+
+.embed__roue {
+  width: 100%;
+  /* La roue occupe la largeur disponible sans jamais dépasser la hauteur du
+     cadre : sans cette borne, un iframe court la ferait déborder. */
+  max-width: min(100%, 68vh);
+}
+
+.embed__roue canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  display: block;
+}
+
+.embed__bouton {
+  padding: 0.7rem 2rem;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: #fff;
+  background: var(--primaire);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.embed__bouton:hover:not(:disabled) {
+  background: var(--primaire-fonce);
+}
+
+.embed__bouton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.embed__bouton:focus-visible {
+  outline: 3px solid var(--primaire);
+  outline-offset: 3px;
+}
+
+.embed__resultat {
+  margin: 0;
+  min-height: 1.6rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  word-break: break-word;
+}
+
+.embed__message {
+  margin: 0;
+  color: var(--texte-doux);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  body.embed {
+    color: #e2e8f0;
+  }
+
+  .embed__message {
+    color: #94a3b8;
+  }
+}

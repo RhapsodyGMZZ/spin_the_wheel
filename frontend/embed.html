@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Roue de la fortune</title>
+    <link rel="stylesheet" href="/static/css/embed.css" />
+  </head>
+  <body class="embed">
+    <main class="embed__contenu">
+      <h1 class="embed__titre" id="titre"></h1>
+
+      <div class="embed__roue">
+        <canvas id="roue" width="480" height="480" aria-label="Roue de la fortune"></canvas>
+      </div>
+
+      <button type="button" class="embed__bouton" id="tourner" disabled>Tourner</button>
+
+      <p class="embed__resultat" id="resultat" role="status" aria-live="polite"></p>
+      <p class="embed__message" id="message" hidden></p>
+    </main>
+
+    <script type="module" src="/static/js/embed.js"></script>
+  </body>
+</html>

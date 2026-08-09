@@ -1,0 +1,510 @@
+/* Feuille de style de l'application d'édition.
+   Aucune règle en ligne dans le HTML : la CSP interdit style-src 'unsafe-inline'. */
+
+:root {
+  --fond: #f6f7fb;
+  --surface: #ffffff;
+  --bordure: #e2e8f0;
+  --texte: #0f172a;
+  --texte-doux: #475569;
+  --texte-discret: #94a3b8;
+  --primaire: #2563eb;
+  --primaire-fonce: #1d4ed8;
+  --danger: #dc2626;
+  --succes: #15803d;
+  --rayon: 12px;
+  --ombre: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--fond);
+  color: var(--texte);
+  font: 400 15px/1.55 system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+h1 {
+  font-size: 1.6rem;
+  margin: 0 0 0.5rem;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.75rem;
+}
+
+a {
+  color: var(--primaire);
+}
+
+/* --- En-tête ------------------------------------------------------------- */
+
+.entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.entete__marque {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--texte);
+  text-decoration: none;
+}
+
+.entete__nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.entete__compte {
+  color: var(--texte-doux);
+  font-size: 0.9rem;
+}
+
+/* --- Mise en page -------------------------------------------------------- */
+
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.page__titre {
+  margin-bottom: 1rem;
+}
+
+.carte {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+  padding: 1.1rem 1.2rem;
+  margin-bottom: 1.1rem;
+}
+
+.carte__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.carte__entete h2 {
+  margin: 0;
+}
+
+.carte--accueil {
+  max-width: 560px;
+  margin: 4rem auto;
+  text-align: center;
+  padding: 2.5rem 2rem;
+}
+
+.edition {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 940px) {
+  .edition {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Texte --------------------------------------------------------------- */
+
+.texte-secondaire {
+  color: var(--texte-doux);
+  margin: 0 0 1rem;
+}
+
+.texte-discret {
+  color: var(--texte-discret);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
+/* --- Statut -------------------------------------------------------------- */
+
+.statut {
+  border-radius: var(--rayon);
+  padding: 0.7rem 0.9rem;
+  margin: 0 0 1rem;
+  border: 1px solid var(--bordure);
+  background: var(--surface);
+  font-size: 0.92rem;
+}
+
+.statut--succes {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: var(--succes);
+}
+
+.statut--erreur {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: var(--danger);
+}
+
+/* --- Champs -------------------------------------------------------------- */
+
+.champ {
+  display: block;
+  margin-bottom: 0.85rem;
+}
+
+.champ--extensible {
+  flex: 1 1 220px;
+  margin-bottom: 0;
+}
+
+.champ__libelle {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texte-doux);
+  margin-bottom: 0.3rem;
+}
+
+input[type='text'],
+input[type='email'],
+textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+}
+
+textarea {
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+input[readonly],
+textarea[readonly] {
+  background: #f8fafc;
+  color: var(--texte-doux);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primaire);
+  outline-offset: 2px;
+}
+
+input[type='color'] {
+  width: 44px;
+  height: 38px;
+  padding: 2px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.bascule {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--texte-doux);
+  font-size: 0.92rem;
+}
+
+.formulaire-inline {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* --- Boutons ------------------------------------------------------------- */
+
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 8px;
+  border: 1px solid var(--bordure);
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.bouton:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.bouton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bouton--principal {
+  background: var(--primaire);
+  border-color: var(--primaire);
+  color: #fff;
+}
+
+.bouton--principal:hover:not(:disabled) {
+  background: var(--primaire-fonce);
+  border-color: var(--primaire-fonce);
+}
+
+.bouton--danger {
+  border-color: #fecaca;
+  color: var(--danger);
+  background: #fff;
+}
+
+.bouton--danger:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.bouton--discret {
+  font-weight: 500;
+  font-size: 0.88rem;
+  padding: 0.4rem 0.7rem;
+}
+
+.bouton--large {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  margin: 0.75rem 0;
+}
+
+.barre-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+/* --- Liste des roues ----------------------------------------------------- */
+
+.liste-roues,
+.liste-comptes,
+.segments,
+.tirages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.liste-roues {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.roue-carte {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.roue-carte__titre {
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--texte);
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.roue-carte__meta {
+  color: var(--texte-discret);
+  font-size: 0.83rem;
+}
+
+.etiquette {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--bordure);
+  color: var(--texte-doux);
+}
+
+.etiquette--active {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: var(--succes);
+}
+
+/* --- Segments ------------------------------------------------------------ */
+
+.segments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.segment {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem;
+  border: 1px solid var(--bordure);
+  border-radius: 10px;
+  background: #fbfcfe;
+}
+
+.segment__poignee {
+  color: var(--texte-discret);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.segment__libelle input {
+  margin: 0;
+}
+
+.segment__image {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.segment__vignette {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.segment__actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.icone-bouton {
+  border: 1px solid var(--bordure);
+  background: #fff;
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--texte-doux);
+}
+
+.icone-bouton:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.icone-bouton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.champ-fichier {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* --- Aperçu de la roue --------------------------------------------------- */
+
+.roue-cadre {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.roue-cadre canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  display: block;
+}
+
+/* --- Tirages et comptes -------------------------------------------------- */
+
+.tirages li,
+.liste-comptes li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--bordure);
+  font-size: 0.92rem;
+}
+
+.tirages li:last-child,
+.liste-comptes li:last-child {
+  border-bottom: none;
+}
+
+.liste-comptes {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+  padding: 0.5rem 1.1rem;
+  margin-top: 1.1rem;
+}
+
+.compte-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.compte-note {
+  color: var(--texte-discret);
+  font-size: 0.82rem;
+}
+
+.tirage-date {
+  color: var(--texte-discret);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}

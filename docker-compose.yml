@@ -1,0 +1,86 @@
+name: spin-the-wheel
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-spinwheel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+      POSTGRES_DB: ${POSTGRES_DB:-spinwheel}
+      # Chiffrement des mots de passe côté serveur
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spinwheel} -d ${POSTGRES_DB:-spinwheel}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    # Pas de `ports:` — la base n'est joignable que depuis le réseau interne.
+    networks:
+      - internal
+
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      HTTP_ADDR: ":8080"
+      BASE_URL: ${BASE_URL:?BASE_URL manquant dans .env}
+      DATABASE_URL: >-
+        postgres://${POSTGRES_USER:-spinwheel}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-spinwheel}?sslmode=disable
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID manquant dans .env}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?GOOGLE_CLIENT_SECRET manquant dans .env}
+      BOOTSTRAP_ADMIN_EMAILS: ${BOOTSTRAP_ADMIN_EMAILS:-}
+      EMBED_FRAME_ANCESTORS: ${EMBED_FRAME_ANCESTORS:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+      IP_HASH_SALT: ${IP_HASH_SALT:?IP_HASH_SALT manquant dans .env}
+      MAX_IMAGE_BYTES: ${MAX_IMAGE_BYTES:-2097152}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
+      IMAGE_DIR: /data/images
+      FRONTEND_DIR: /srv/frontend
+    volumes:
+      - images:/data/images
+      # Front monté en lecture seule : modifier le CSS/JS ne demande pas de rebuild.
+      - ./frontend:/srv/frontend:ro
+    ports:
+      # Écoute en HTTP sur la loopback uniquement. nginx fait le TLS devant.
+      - "127.0.0.1:${HTTP_PORT:-8080}:8080"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/spinwheel", "-healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      # `internal` pour joindre la base, `edge` pour joindre Google (OAuth).
+      - internal
+      - edge
+
+volumes:
+  db-data:
+  images:
+
+networks:
+  internal:
+    internal: true
+  edge:

@@ -1,0 +1,16 @@
+# Secrets : jamais commités
+.env
+.env.*
+!.env.example
+
+# Données locales
+/data/
+/backend/spinwheel
+/backend/spinwheel.exe
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
