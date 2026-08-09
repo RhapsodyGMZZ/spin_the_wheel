@@ -18,6 +18,20 @@ function clamp(value, min, max) {
 }
 
 /**
+ * Indique si le système demande de limiter les animations.
+ *
+ * Sur macOS c'est « Réduire les animations » dans les réglages d'accessibilité,
+ * activé par bien des gens que les animations de fenêtres incommodent — sans
+ * qu'ils souhaitent pour autant qu'une roue de la fortune cesse de tourner.
+ */
+function prefereMoinsDeMouvement() {
+  return (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+/**
  * Choisit une encre lisible sur un fond donné.
  * Luminance relative WCAG : au-delà du seuil, on écrit en sombre.
  */
@@ -237,7 +251,13 @@ export function createWheel(canvas) {
    * @returns {Promise<void>}
    */
   function spinTo(index, options = {}) {
-    const { turns = 6, duration = 4600 } = options;
+    // La rotation EST le contenu de la page, pas un ornement : la supprimer
+    // reviendrait à retirer la fonction. Quand le système demande de réduire
+    // les animations, on raccourcit — deux tours au lieu de six — mais la roue
+    // tourne toujours.
+    const menage = prefereMoinsDeMouvement();
+    const { turns = menage ? 2 : 6, duration = menage ? 2400 : 4600 } = options;
+
     return new Promise((resolve) => {
       const count = segments.length;
       if (count === 0) {
@@ -250,15 +270,20 @@ export function createWheel(canvas) {
       let delta = (target - rotation) % TAU;
       if (delta < 0) delta += TAU;
 
-      const from = rotation;
-      const to = from + turns * TAU + delta;
+      // Le nombre de tours doit être ENTIER. L'alignement sur le segment est
+      // porté par `delta` ; seule une rotation d'un multiple exact de 2π le
+      // préserve. Un tour et demi ferait s'arrêter la roue à l'opposé du nom
+      // annoncé — l'arrondi rend cette erreur impossible depuis l'appelant.
+      const tours = Math.max(1, Math.round(turns));
 
-      const reduceMotion =
-        window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const from = rotation;
+      const to = from + tours * TAU + delta;
 
       cancelAnimation();
 
-      if (reduceMotion || duration <= 0) {
+      // Seul un appelant demandant explicitement une durée nulle obtient un
+      // saut immédiat.
+      if (duration <= 0) {
         rotation = normalize(to);
         render();
         resolve();
