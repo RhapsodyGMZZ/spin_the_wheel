@@ -167,22 +167,38 @@ func (s *Store) BootstrapAllowedEmails(ctx context.Context, emails []string, log
 	return nil
 }
 
-// PurgeExpired supprime les sessions et états OAuth périmés. Appelé
-// périodiquement par une tâche de fond.
-func (s *Store) PurgeExpired(ctx context.Context) (sessions, states int64, err error) {
+// PurgeExpired supprime les sessions et états OAuth périmés, et applique la
+// rétention du journal d'audit. Appelé périodiquement par une tâche de fond.
+//
+// Sans rétention, `audit_log` ne décroît jamais : à quelques milliers de
+// tirages par heure, la table grossit indéfiniment et conserve bien au-delà de
+// l'utile des traces liées à des visiteurs anonymes.
+func (s *Store) PurgeExpired(ctx context.Context) (sessions, states, audits int64, err error) {
 	tag, err := s.Pool.Exec(ctx,
 		`DELETE FROM sessions WHERE expires_at < now() - interval '7 days'`)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, 0, err
 	}
 	sessions = tag.RowsAffected()
 
 	tag, err = s.Pool.Exec(ctx,
 		`DELETE FROM oauth_states WHERE expires_at < now() - interval '1 hour'`)
 	if err != nil {
-		return sessions, 0, err
+		return sessions, 0, 0, err
 	}
-	return sessions, tag.RowsAffected(), nil
+	states = tag.RowsAffected()
+
+	// Les tirages sont volumineux et peu informatifs passé quelques semaines ;
+	// l'historique produit reste dans la table `spins`. Le reste du journal,
+	// qui trace des actions de comptes identifiés, est gardé un an.
+	tag, err = s.Pool.Exec(ctx, `
+		DELETE FROM audit_log
+		WHERE (action = 'wheel.spin' AND created_at < now() - interval '30 days')
+		   OR created_at < now() - interval '365 days'`)
+	if err != nil {
+		return sessions, states, 0, err
+	}
+	return sessions, states, tag.RowsAffected(), nil
 }
 
 // nullUUID rend nil pour l'UUID nul, afin d'insérer NULL plutôt que

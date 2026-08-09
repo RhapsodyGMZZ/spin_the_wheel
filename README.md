@@ -239,9 +239,33 @@ chronologique, sans lire la colonne `created_at`.
 
 **Sauvegarde**
 
+La base exige un mot de passe même sur le socket local (`--auth-local=scram-sha-256`),
+et `pg_dump` ne lit pas `POSTGRES_PASSWORD` : sans `PGPASSWORD`, la commande
+échoue, `gzip` écrit une archive vide **et le code de retour reste 0**. D'où le
+`set -o pipefail` et le contrôle de taille, sans lesquels une sauvegarde ratée
+est indiscernable d'une sauvegarde réussie.
+
 ```bash
-docker compose exec -T db pg_dump -U spinwheel spinwheel | gzip > sauvegarde-$(date +%F).sql.gz
-docker run --rm -v spin-the-wheel_images:/data -v "$PWD":/sortie alpine tar czf /sortie/images-$(date +%F).tar.gz -C /data .
+mkdir -p /var/backups/spinwheel && cd /var/backups/spinwheel
+set -o pipefail
+docker compose -f /chemin/vers/docker-compose.yml exec -T db \
+  sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' \
+  | gzip > base-$(date +%F).sql.gz
+test "$(stat -c %s base-$(date +%F).sql.gz)" -gt 10000 || echo "SAUVEGARDE SUSPECTE"
+docker run --rm -v spin-the-wheel_images:/data -v "$PWD":/sortie alpine \
+  tar czf /sortie/images-$(date +%F).tar.gz -C /data .
+```
+
+Écrire hors de l'arbre du dépôt : la racine du projet est suivie par git et
+poussée sur GitHub.
+
+**Restauration**
+
+```bash
+gunzip -c base-2026-08-09.sql.gz | docker compose exec -T db \
+  sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+docker run --rm -v spin-the-wheel_images:/data -v "$PWD":/entree alpine \
+  tar xzf /entree/images-2026-08-09.tar.gz -C /data
 ```
 
 **Mise à jour**

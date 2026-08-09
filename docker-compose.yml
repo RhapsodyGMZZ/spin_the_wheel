@@ -21,6 +21,11 @@ services:
       start_period: 10s
     security_opt:
       - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     # Pas de `ports:` — la base n'est joignable que depuis le réseau interne.
     networks:
       - internal
@@ -63,6 +68,14 @@ services:
     cap_drop:
       - ALL
     read_only: true
+    # Sans rotation, le journal JSON de Docker grossit sans borne sur la même
+    # partition que le volume de la base : disque plein, PostgreSQL ne peut
+    # plus écrire son WAL.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
     healthcheck:

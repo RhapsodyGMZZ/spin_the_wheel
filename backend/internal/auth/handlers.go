@@ -279,10 +279,18 @@ func (a *Auth) Resolve(next http.Handler) http.Handler {
 		sess, user, err := a.st.LookupSession(r.Context(), hashToken(c.Value))
 		if err != nil {
 			if !errors.Is(err, store.ErrNotFound) {
+				// Panne de base, pool saturé, connexion coupée : la session
+				// est peut-être parfaitement valide. Effacer le cookie ici
+				// déconnecterait tout le monde pour quelques secondes
+				// d'indisponibilité, en laissant autant de sessions orphelines
+				// en base. On signale l'indisponibilité, on ne touche à rien.
 				a.log.Error("lecture de session", "error", err)
+				httpx.Err(w, r, http.StatusServiceUnavailable, httpx.CodeInternal,
+					"Service momentanément indisponible.")
+				return
 			}
-			// Cookie périmé ou révoqué : on l'efface pour éviter que le
-			// navigateur le renvoie indéfiniment.
+			// Session réellement inconnue, révoquée ou périmée : le cookie ne
+			// sert plus à rien, autant éviter que le navigateur le renvoie.
 			a.clearCookie(w, a.cfg.CookieName)
 			next.ServeHTTP(w, r)
 			return

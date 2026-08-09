@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/hex"
 	"log/slog"
 	"net/http"
 	"path/filepath"
@@ -257,8 +258,19 @@ func cacheFor(d time.Duration) httpx.Middleware {
 }
 
 // audit écrit une ligne de journal d'audit enrichie du contexte HTTP.
+//
+// L'adresse d'un appelant anonyme est pseudonymisée avec le même sel que
+// `spins.ip_hash`. Sans cela, la précaution prise sur la table des tirages
+// serait annulée par le journal d'audit écrit dans la foulée : les deux lignes
+// se recoupent par `details->>'spin_id'`, et l'une d'elles portait l'adresse en
+// clair. Les actions d'un compte identifié conservent l'adresse lisible, qui
+// sert à l'exploitation.
 func (s *Server) audit(r *http.Request, e store.AuditEntry) {
-	e.IP = httpx.ClientIP(r, s.cfg.TrustProxy)
+	ip := httpx.ClientIP(r, s.cfg.TrustProxy)
+	if e.ActorID.IsZero() && ip != "" {
+		ip = "sha256:" + hex.EncodeToString(s.hashIP(ip))
+	}
+	e.IP = ip
 	e.UserAgent = r.UserAgent()
 	e.RequestID = httpx.RequestIDOf(r)
 	if err := s.st.Audit(r.Context(), e); err != nil {

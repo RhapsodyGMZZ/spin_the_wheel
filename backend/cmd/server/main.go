@@ -132,11 +132,12 @@ func backgroundJanitor(ctx context.Context, st *store.Store, cfg *config.Config,
 		case <-t.C:
 			jobCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 
-			sessions, states, err := st.PurgeExpired(jobCtx)
+			sessions, states, audits, err := st.PurgeExpired(jobCtx)
 			if err != nil {
 				log.Error("purge des sessions", "error", err)
-			} else if sessions+states > 0 {
-				log.Info("purge effectuée", "sessions", sessions, "etats_oauth", states)
+			} else if sessions+states+audits > 0 {
+				log.Info("purge effectuée",
+					"sessions", sessions, "etats_oauth", states, "lignes_audit", audits)
 			}
 
 			// 24 h de grâce : une image téléversée puis laissée de côté le

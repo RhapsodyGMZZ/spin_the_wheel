@@ -8,6 +8,12 @@
 /backend/spinwheel
 /backend/spinwheel.exe
 
+# Sauvegardes : à écrire hors du dépôt, mais filet de sécurité si on oublie
+*.sql
+*.sql.gz
+*.tar.gz
+*.dump
+
 # OS / éditeurs
 .DS_Store
 Thumbs.db

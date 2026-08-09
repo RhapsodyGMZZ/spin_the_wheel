@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"spinwheel/internal/logging"
 	"spinwheel/internal/uid"
@@ -116,7 +117,10 @@ func AccessLog(log *slog.Logger, trustProxy bool) Middleware {
 			log.Log(r.Context(), lvl, "requête",
 				"request_id", RequestIDOf(r),
 				"method", r.Method,
-				"path", r.URL.Path,
+				// Chemin borné comme le User-Agent : les deux viennent du
+				// client, et une URL de plusieurs kilo-octets répétée en
+				// boucle remplirait le disque par le journal.
+				"path", truncate(r.URL.Path, 256),
 				"status", sw.status,
 				"bytes", sw.bytes,
 				"duration_ms", time.Since(start).Milliseconds(),
@@ -235,9 +239,14 @@ func isSafeMethod(m string) bool {
 	return m == http.MethodGet || m == http.MethodHead || m == http.MethodOptions
 }
 
+// truncate borne une chaîne à n octets sans couper au milieu d'un caractère.
+// Voir le commentaire de la fonction homonyme dans internal/store.
 func truncate(s string, n int) string {
 	if len(s) <= n {
 		return s
+	}
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
 	}
 	return s[:n]
 }

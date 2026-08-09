@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"spinwheel/internal/uid"
 )
@@ -220,9 +221,20 @@ func (s *Store) RevokeSession(ctx context.Context, tokenHash []byte) error {
 	return err
 }
 
+// truncate borne une chaîne à n octets, sans jamais couper au milieu d'un
+// caractère.
+//
+// Découper sur l'octet laisserait un fragment de rune, donc une séquence UTF-8
+// invalide, que PostgreSQL refuse à l'écriture. Comme les chaînes passées ici
+// viennent du client (User-Agent), la coupure naïve offrait un 500 à la
+// demande : un en-tête calibré faisait échouer l'insertion du tirage, après le
+// tirage lui-même, et supprimait au passage la trace dans le journal.
 func truncate(s string, n int) string {
 	if len(s) <= n {
 		return s
+	}
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
 	}
 	return s[:n]
 }

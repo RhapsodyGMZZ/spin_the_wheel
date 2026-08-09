@@ -86,13 +86,24 @@ func (s *Store) CountImagesSince(ctx context.Context, ownerID uid.UUID, since ti
 	return n, err
 }
 
-// ListOrphanImages rend les images qu'aucun segment ne référence et qui sont
-// assez anciennes pour ne pas être un upload en cours d'édition.
+// ListOrphanImages rend les images qu'aucune roue VIVANTE ne référence et qui
+// sont assez anciennes pour ne pas être un envoi en cours d'édition.
+//
+// La jointure sur wheels est essentielle : SoftDeleteWheel ne fait que poser
+// deleted_at, les lignes segments survivent et continuent de référencer leurs
+// images. Sans cette jointure, une image d'une roue supprimée n'était jamais
+// considérée comme orpheline — et comme /img/{id} sert le fichier sans
+// consulter la base, la photo restait accessible indéfiniment à qui avait
+// relevé son URL. Supprimer une roue est le seul levier de retrait offert à
+// l'utilisateur : il doit atteindre la donnée la plus sensible du produit.
 func (s *Store) ListOrphanImages(ctx context.Context, olderThan time.Duration, limit int) ([]uid.UUID, error) {
 	rows, err := s.Pool.Query(ctx, `
 		SELECT i.id FROM images i
 		WHERE i.created_at < now() - make_interval(secs => $1)
-		  AND NOT EXISTS (SELECT 1 FROM segments s WHERE s.image_id = i.id)
+		  AND NOT EXISTS (
+		        SELECT 1 FROM segments sg
+		        JOIN wheels w ON w.id = sg.wheel_id
+		        WHERE sg.image_id = i.id AND w.deleted_at IS NULL)
 		ORDER BY i.id ASC
 		LIMIT $2`, olderThan.Seconds(), limit)
 	if err != nil {
@@ -111,8 +122,23 @@ func (s *Store) ListOrphanImages(ctx context.Context, olderThan time.Duration, l
 	return out, rows.Err()
 }
 
-// DeleteImage supprime la ligne de métadonnées.
-func (s *Store) DeleteImage(ctx context.Context, id uid.UUID) error {
-	_, err := s.Pool.Exec(ctx, `DELETE FROM images WHERE id = $1`, id)
-	return err
+// DeleteImageIfUnused supprime la ligne de métadonnées uniquement si aucune
+// roue vivante ne référence l'image, et indique si la suppression a eu lieu.
+//
+// La condition est rejouée dans le DELETE lui-même : entre le moment où le
+// ménage liste les orphelines et celui où il les efface, l'une d'elles a pu
+// être rattachée à un segment. Décider en deux temps effacerait alors une
+// image tout juste mise en service.
+func (s *Store) DeleteImageIfUnused(ctx context.Context, id uid.UUID) (bool, error) {
+	tag, err := s.Pool.Exec(ctx, `
+		DELETE FROM images i
+		WHERE i.id = $1
+		  AND NOT EXISTS (
+		        SELECT 1 FROM segments sg
+		        JOIN wheels w ON w.id = sg.wheel_id
+		        WHERE sg.image_id = i.id AND w.deleted_at IS NULL)`, id)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() == 1, nil
 }

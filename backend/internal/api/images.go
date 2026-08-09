@@ -21,6 +21,13 @@ import (
 // plus, et la borne garantit des fichiers de quelques dizaines de kilo-octets.
 const imageTargetSide = 256
 
+// Plafond d'envois par compte et par tranche de 24 heures.
+//
+// La limitation de débit borne la cadence instantanée ; celle-ci borne le
+// volume cumulé, sans quoi le débit d'entrée dépasse structurellement celui du
+// ménage horaire et le volume disque ne redescend jamais.
+const maxImagesParJour = 300
+
 // imagePath construit le chemin disque d'une image.
 //
 // Le nom de fichier dérive d'un UUID déjà analysé, jamais d'une chaîne fournie
@@ -57,6 +64,21 @@ func (s *Server) listImages(w http.ResponseWriter, r *http.Request) {
 func (s *Server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	u := auth.MustUser(r.Context())
 
+	// Nettoyage armé avant l'analyse, par précaution seulement.
+	//
+	// ParseMultipartForm déverse sur disque ce qui dépasse la mémoire
+	// autorisée, mais mime/multipart supprime lui-même ses fichiers
+	// temporaires quand la lecture échoue, et laisse alors r.MultipartForm à
+	// nil — vérifié expérimentalement : 20 corps tronqués de 2 Mio ne laissent
+	// aucun fichier dans /tmp. Ce defer ne rattrape donc rien aujourd'hui ; il
+	// couvre le chemin de succès et ne dépend pas de ce détail d'implémen-
+	// tation de la bibliothèque standard.
+	defer func() {
+		if r.MultipartForm != nil {
+			_ = r.MultipartForm.RemoveAll()
+		}
+	}()
+
 	// 1 Mio en mémoire, le reste sur /tmp (monté en tmpfs, non exécutable).
 	if err := r.ParseMultipartForm(1 << 20); err != nil {
 		var maxErr *http.MaxBytesError
@@ -68,11 +90,20 @@ func (s *Server) uploadImage(w http.ResponseWriter, r *http.Request) {
 		httpx.Err(w, r, http.StatusBadRequest, httpx.CodeBadRequest, "Envoi illisible.")
 		return
 	}
-	defer func() {
-		if r.MultipartForm != nil {
-			_ = r.MultipartForm.RemoveAll()
-		}
-	}()
+
+	// Quota journalier par compte : la limitation de débit borne la cadence,
+	// pas le volume cumulé sur une journée.
+	recents, err := s.st.CountImagesSince(r.Context(), u.ID, 24*time.Hour)
+	if err != nil {
+		s.writeError(w, r, err, "comptage des envois récents")
+		return
+	}
+	if recents >= maxImagesParJour {
+		w.Header().Set("Retry-After", "3600")
+		httpx.Err(w, r, http.StatusTooManyRequests, httpx.CodeRateLimited,
+			"Quota d'images atteint pour aujourd'hui.")
+		return
+	}
 
 	file, _, err := r.FormFile("image")
 	if err != nil {
@@ -120,12 +151,16 @@ func (s *Server) uploadImage(w http.ResponseWriter, r *http.Request) {
 	// renommage. Un incident en cours d'écriture ne laisse jamais une image
 	// tronquée à l'URL publique.
 	tmp := path + ".tmp"
+	// Après un renommage réussi, ce Remove ne trouve plus rien et ne coûte
+	// rien ; sur tout chemin d'échec, il évite de laisser un .tmp orphelin
+	// qu'aucun ménage ne balaie.
+	defer func() { _ = os.Remove(tmp) }()
+
 	if err := os.WriteFile(tmp, res.PNG, 0o640); err != nil {
 		s.writeError(w, r, err, "écriture de l'image")
 		return
 	}
 	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
 		s.writeError(w, r, err, "publication de l'image")
 		return
 	}
@@ -215,14 +250,21 @@ func PurgeOrphanImages(ctx context.Context, st *store.Store, imageDir string, gr
 
 	removed := 0
 	for _, id := range ids {
+		// La base d'abord, et sous condition : entre la liste et la
+		// suppression, l'image a pu être rattachée à un segment. La requête
+		// revérifie l'absence de référence au moment du DELETE ; si elle
+		// n'efface rien, le fichier doit rester.
+		efface, err := st.DeleteImageIfUnused(ctx, id)
+		if err != nil {
+			log.Warn("suppression d'une ligne image", "error", err, "image_id", id.String())
+			continue
+		}
+		if !efface {
+			continue
+		}
 		path := filepath.Join(imageDir, id.String()+".png")
 		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 			log.Warn("suppression d'un fichier image", "error", err, "image_id", id.String())
-			continue
-		}
-		if err := st.DeleteImage(ctx, id); err != nil {
-			log.Warn("suppression d'une ligne image", "error", err, "image_id", id.String())
-			continue
 		}
 		removed++
 	}

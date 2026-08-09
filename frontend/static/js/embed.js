@@ -16,6 +16,7 @@ const resultat = document.getElementById('resultat');
 const message = document.getElementById('message');
 
 let roue = null;
+let segments = [];
 
 function afficherMessage(texte) {
   message.textContent = texte;
@@ -48,6 +49,16 @@ async function appeler(method, path) {
   return data;
 }
 
+/** Recharge la roue depuis le serveur et met à jour l'affichage. */
+async function charger() {
+  const data = await appeler('GET', `/api/embed/${encodeURIComponent(wheelId)}`);
+  segments = data.segments ?? [];
+  titre.textContent = data.title;
+  document.title = data.title || 'Roue de la fortune';
+  roue.setSegments(segments);
+  return data;
+}
+
 async function tourner() {
   if (roue.isSpinning()) return;
 
@@ -58,7 +69,19 @@ async function tourner() {
   try {
     // Le serveur choisit le résultat ; l'animation ne fait que s'y rendre.
     const tirage = await appeler('POST', `/api/embed/${encodeURIComponent(wheelId)}/spin`);
+
+    // Ce cadre peut rester ouvert des heures dans un Digipad pendant que la
+    // roue est rééditée ailleurs. Le serveur tire alors sur la liste courante
+    // tandis que l'animation tourne sur une liste figée au chargement : le
+    // repère s'arrêterait sur un nom et le texte en annoncerait un autre.
+    // On resynchronise avant d'animer dès que les deux ne concordent plus.
+    const local = segments[tirage.index];
+    if (!local || local.label !== tirage.label) {
+      await charger();
+    }
+
     await roue.spinTo(tirage.index);
+    // Le serveur fait foi, y compris si la resynchronisation a échoué.
     resultat.textContent = tirage.label;
   } catch (err) {
     afficherMessage(err.message);
@@ -71,13 +94,9 @@ async function main() {
   roue = createWheel(document.getElementById('roue'));
 
   try {
-    const data = await appeler('GET', `/api/embed/${encodeURIComponent(wheelId)}`);
+    await charger();
 
-    titre.textContent = data.title;
-    document.title = data.title || 'Roue de la fortune';
-    roue.setSegments(data.segments ?? []);
-
-    if ((data.segments ?? []).length < 2) {
+    if (segments.length < 2) {
       afficherMessage('Cette roue n’a pas encore assez de segments.');
       return;
     }
