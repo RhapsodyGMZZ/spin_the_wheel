@@ -280,9 +280,20 @@ docker run --rm -v spin-the-wheel_images:/data -v "$PWD":/entree alpine \
 git pull && docker compose up -d --build
 ```
 
-Les migrations non encore jouées s'appliquent au démarrage. Modifier le CSS ou
-le JS ne demande aucun rebuild : le dossier `frontend/` est monté en lecture
-seule dans le conteneur.
+Le `--build` n'est pas optionnel, et son oubli est trompeur. `frontend/` est
+monté en bind mount : un simple `git pull` met le HTML, le CSS et le JavaScript
+à jour immédiatement. Le binaire Go, lui, vit dans l'image, et `docker compose
+up -d` sans `--build` réutilise l'image existante. On se retrouve alors avec un
+front récent sur un serveur ancien — le navigateur n'affiche plus les
+restrictions levées, mais l'API les applique toujours.
+
+Vérifier ce qui tourne réellement :
+
+```bash
+docker image inspect $(docker compose images -q app) --format '{{.Created}}'
+```
+
+Les migrations non encore jouées s'appliquent au démarrage.
 
 **Ménage automatique** — une tâche horaire supprime les sessions et états OAuth
 périmés, ainsi que les images qu'aucun segment ne référence depuis plus de 24 h.
