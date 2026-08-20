@@ -17,9 +17,12 @@ import (
 	"spinwheel/internal/uid"
 )
 
-// Plus grand côté des images servies. Un segment de roue n'en demande pas
-// plus, et la borne garantit des fichiers de quelques dizaines de kilo-octets.
-const imageTargetSide = 256
+// Plus grand côté des images servies.
+//
+// L'image est l'élément principal d'un quartier, et l'annonce du résultat la
+// montre en grand : 256 px se voyait interpolé sur un écran de classe. La
+// borne reste modeste au regard du quota journalier par compte.
+const imageTargetSide = 512
 
 // Plafond d'envois par compte et par tranche de 24 heures.
 //

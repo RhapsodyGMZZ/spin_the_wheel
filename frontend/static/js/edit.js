@@ -156,7 +156,7 @@ function ligneSegment(seg, index) {
           value: seg.label,
           maxlength: 80,
           'aria-label': `Libellé du segment ${index + 1}`,
-          placeholder: 'Libellé',
+          placeholder: 'Libellé (facultatif)',
         },
         on: {
           input: (event) => {
@@ -228,8 +228,17 @@ async function enregistrer() {
     status(zoneStatut, 'Une roue demande au moins 2 segments.', 'erreur');
     return;
   }
-  if (segments.some((seg) => seg.label.trim() === '')) {
-    status(zoneStatut, 'Chaque segment doit porter un libellé.', 'erreur');
+  // Le libellé est facultatif, l'image aussi — mais un quartier sans l'un ni
+  // l'autre n'aurait rien à montrer, ni rien à annoncer au tirage.
+  const sansContenu = segments.findIndex(
+    (seg) => seg.label.trim() === '' && !seg.image_id,
+  );
+  if (sansContenu >= 0) {
+    status(
+      zoneStatut,
+      `Segment ${sansContenu + 1} : ajoutez un libellé ou une image.`,
+      'erreur',
+    );
     return;
   }
 
@@ -310,7 +319,7 @@ function preparerIntegration(url) {
   // interprété par la page.
   codeEmbed.value =
     `<iframe src="${url}" width="480" height="640" ` +
-    `style="border:0;max-width:100%" title="Roue de la fortune" ` +
+    `style="border:0;max-width:100%" title="Spin the Wheel" ` +
     `loading="lazy"></iframe>`;
 }
 

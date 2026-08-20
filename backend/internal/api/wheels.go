@@ -251,7 +251,7 @@ func (s *Server) putSegments(w http.ResponseWriter, r *http.Request) {
 
 	segs := make([]store.Segment, 0, len(in.Segments))
 	for i, raw := range in.Segments {
-		label, err := validText("Libellé du segment "+itoa(i+1), raw.Label, 1, s.cfg.MaxLabelRunes)
+		label, err := validText("Libellé du segment "+itoa(i+1), raw.Label, 0, s.cfg.MaxLabelRunes)
 		if err != nil {
 			s.writeError(w, r, err, "")
 			return
@@ -269,6 +269,14 @@ func (s *Server) putSegments(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			seg.ImageID = imgID
+		}
+
+		// Le libellé est facultatif, l'image aussi — mais pas les deux à la
+		// fois : un quartier sans rien à montrer ne serait qu'un aplat de
+		// couleur, et l'annonce du tirage n'aurait rien à afficher.
+		if label == "" && seg.ImageID.IsZero() {
+			s.writeError(w, r, invalid("Segment %d : ajoutez un libellé ou une image.", i+1), "")
+			return
 		}
 		segs = append(segs, seg)
 	}

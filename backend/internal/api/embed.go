@@ -129,6 +129,9 @@ func (s *Server) spin(w http.ResponseWriter, r *http.Request) {
 		"spin_id": spinID.String(),
 		"index":   index,
 		"label":   chosen.Label,
+		// L'annonce du résultat montre l'image en grand : le client ne doit pas
+		// avoir à la retrouver dans une liste qui a pu changer entre-temps.
+		"image_url": imageURL(chosen.ImageID),
 	})
 }
 

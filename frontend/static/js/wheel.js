@@ -22,9 +22,9 @@ function clamp(value, min, max) {
  *
  * Sur macOS c'est « Réduire les animations » dans les réglages d'accessibilité,
  * activé par bien des gens que les animations de fenêtres incommodent — sans
- * qu'ils souhaitent pour autant qu'une roue de la fortune cesse de tourner.
+ * qu'ils souhaitent pour autant que la roue cesse de tourner.
  */
-function prefereMoinsDeMouvement() {
+export function prefereMoinsDeMouvement() {
   return (
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -108,43 +108,80 @@ export function createWheel(canvas) {
     return `${cut}…`;
   }
 
+  /**
+   * Peint le contenu d'un quartier : l'image d'abord, le libellé ensuite.
+   *
+   * L'image est l'élément principal. Elle prend le plus grand carré qui tienne
+   * dans le secteur, et récupère toute la place quand il n'y a pas de libellé.
+   * Le libellé est facultatif : vide, il ne réserve rien du tout.
+   */
   function drawSegmentContent(seg, mid, arc, radius) {
+    const libelle = String(seg.label ?? '').trim();
+    const img = seg.image_url ? images.get(seg.image_url) : null;
+    if (!libelle && !img) return;
+
     ctx.save();
     ctx.rotate(mid);
 
-    const img = seg.image_url ? images.get(seg.image_url) : null;
-    if (img) {
-      // Taille bornée par l'ouverture du segment : sur une roue à 20
-      // quartiers, l'image doit rétrécir pour ne pas déborder chez le voisin.
-      const byArc = arc * radius * 0.40;
-      const side = clamp(Math.min(radius * 0.22, byArc), 12, 56);
-      const ratio =
-        img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1;
-      const w = ratio >= 1 ? side : side * ratio;
-      const h = ratio >= 1 ? side / ratio : side;
-      ctx.drawImage(img, radius * 0.42 - w / 2, -h / 2, w, h);
+    // Corps réduit en présence d'une image : à largeur de bande égale, un
+    // texte plus petit fait tenir plus de caractères avant la troncature.
+    const corps = img ? clamp(radius * 0.06, 8, 16) : clamp(radius * 0.072, 9, 19);
+    ctx.font = `600 ${corps}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+
+    // Le texte court le long du rayon : il consomme donc de la place en
+    // PROFONDEUR, pas en hauteur. Sans image il peut s'étaler, avec image on
+    // le contient pour ne pas manger le sujet principal.
+    const texte = libelle ? ellipsize(libelle, img ? radius * 0.34 : radius * 0.62) : '';
+    const largeurTexte = texte ? ctx.measureText(texte).width : 0;
+
+    const rInterne = radius * 0.17; // bord du moyeu
+    const rExterne = radius * 0.96 - (largeurTexte ? largeurTexte + radius * 0.04 : 0);
+
+    if (img && rExterne > rInterne) {
+      // Plus grand carré inscriptible dans le secteur.
+      //
+      // Un carré de côté s centré à la distance d sur l'axe s'étend de
+      // d - s/2 à d + s/2 en profondeur, et de ±s/2 en travers. Le secteur
+      // se resserre vers le moyeu : la contrainte mord donc au bord interne,
+      // où la demi-largeur disponible vaut (d - s/2)·tan(arc/2). En poussant
+      // le carré au plus loin (d + s/2 = rExterne), on obtient
+      // s ≤ 2·t·rExterne / (1 + 2·t).
+      //
+      // tan diverge à un demi-tour : l'angle est borné pour qu'une roue à
+      // deux quartiers ne produise pas un NaN.
+      const t = Math.tan(Math.min(arc, Math.PI * 0.9) / 2);
+      const cote =
+        Math.min(rExterne - rInterne, (2 * t * rExterne) / (1 + 2 * t)) * 0.94;
+
+      if (cote > 8) {
+        const d = rExterne - cote / 2;
+        const ratio =
+          img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1;
+        const w = ratio >= 1 ? cote : cote * ratio;
+        const h = ratio >= 1 ? cote / ratio : cote;
+        ctx.drawImage(img, d - w / 2, -h / 2, w, h);
+      }
     }
 
-    const fontSize = clamp(radius * 0.072, 9, 19);
-    ctx.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
-    ctx.fillStyle = readableInk(seg.color);
-    ctx.textBaseline = 'middle';
+    if (texte) {
+      ctx.fillStyle = readableInk(seg.color);
+      ctx.textBaseline = 'middle';
 
-    const label = ellipsize(String(seg.label ?? ''), radius * 0.46);
-    // Sur la moitié gauche de la roue, le texte s'écrirait à l'envers : on le
-    // retourne et on l'aligne de l'autre côté.
-    const upsideDown = (() => {
-      const abs = normalize(rotation + mid);
-      return abs > Math.PI / 2 && abs < (3 * Math.PI) / 2;
-    })();
+      // Sur la moitié gauche de la roue, le texte s'écrirait à l'envers : on
+      // le retourne et on l'aligne de l'autre côté.
+      const alEnvers = (() => {
+        const abs = normalize(rotation + mid);
+        return abs > Math.PI / 2 && abs < (3 * Math.PI) / 2;
+      })();
 
-    if (upsideDown) {
-      ctx.rotate(Math.PI);
-      ctx.textAlign = 'left';
-      ctx.fillText(label, -radius * 0.94, 0);
-    } else {
-      ctx.textAlign = 'right';
-      ctx.fillText(label, radius * 0.94, 0);
+      if (alEnvers) {
+        ctx.rotate(Math.PI);
+        ctx.textAlign = 'left';
+        ctx.fillText(texte, -radius * 0.96, 0);
+      } else {
+        ctx.textAlign = 'right';
+        ctx.fillText(texte, radius * 0.96, 0);
+      }
     }
 
     ctx.restore();

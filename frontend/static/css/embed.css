@@ -7,6 +7,7 @@
   --texte-doux: #475569;
   --primaire: #2563eb;
   --primaire-fonce: #1d4ed8;
+  --voile: rgba(255, 255, 255, 0.86);
 }
 
 * {
@@ -27,6 +28,7 @@ body.embed {
   background: transparent;
   color: var(--texte);
   font: 400 15px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  overflow: hidden;
 }
 
 .embed__contenu {
@@ -47,7 +49,13 @@ body.embed {
   word-break: break-word;
 }
 
-.embed__roue {
+/* --- Roue et superposition ------------------------------------------------ */
+
+.embed__scene {
+  position: relative;
+  /* Unité cqw : la taille du résultat suit la largeur de la roue,
+     pas celle de la fenêtre — un iframe étroit reste lisible. */
+  container-type: inline-size;
   width: 100%;
   /* La roue occupe la largeur disponible sans jamais dépasser la hauteur du
      cadre : sans cette borne, un iframe court la ferait déborder. */
@@ -60,6 +68,80 @@ body.embed {
   aspect-ratio: 1 / 1;
   display: block;
 }
+
+.embed__annonce {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 8%;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--voile);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  /* Sans `both` : une fois jouée, l'animation ne retient plus l'élément, qui
+     retrouve son état naturel — celui-là même que décrit la keyframe `to`.
+     Un état de repos qui ne dépend d'aucune animation est plus sûr. */
+  animation: annonce-entree 320ms cubic-bezier(0.18, 1.2, 0.4, 1);
+}
+
+.embed__annonce[hidden] {
+  display: none;
+}
+
+.embed__annonce-image {
+  /* `width` et non `max-width` : l'image doit aussi grandir, pas seulement
+     être plafonnée. Sans cela une image plus petite que le cadre restait
+     minuscule au centre du cercle. */
+  width: 58%;
+  max-height: 46%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(15, 23, 42, 0.25));
+}
+
+.embed__annonce-image[hidden] {
+  display: none;
+}
+
+.embed__annonce-texte {
+  margin: 0;
+  /* Grand, mais borné par la largeur du cadre : un libellé long doit rester
+     dans le cercle plutôt que déborder. */
+  font-size: clamp(1.4rem, 7cqw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--texte);
+  overflow-wrap: anywhere;
+}
+
+@keyframes annonce-entree {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* --- Confettis ------------------------------------------------------------ */
+
+.embed__confettis {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* --- Commandes ------------------------------------------------------------ */
 
 .embed__bouton {
   padding: 0.7rem 2rem;
@@ -88,15 +170,6 @@ body.embed {
   outline-offset: 3px;
 }
 
-.embed__resultat {
-  margin: 0;
-  min-height: 1.6rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  text-align: center;
-  word-break: break-word;
-}
-
 .embed__message {
   margin: 0;
   color: var(--texte-doux);
@@ -104,9 +177,35 @@ body.embed {
   text-align: center;
 }
 
+.visuellement-cache {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .embed__annonce {
+    animation-duration: 1ms;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
+  :root {
+    --voile: rgba(15, 23, 42, 0.88);
+  }
+
   body.embed {
     color: #e2e8f0;
+  }
+
+  .embed__annonce-texte {
+    color: #f8fafc;
   }
 
   .embed__message {

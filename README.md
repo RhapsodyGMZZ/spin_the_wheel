@@ -1,6 +1,6 @@
 # Spin the Wheel
 
-Roue de la fortune multi-utilisateurs, éditable en ligne et intégrable en
+Roue multi-utilisateurs, éditable en ligne et intégrable en
 iframe dans Digipad.
 
 - **Backend** : Go, sans framework HTTP, PostgreSQL.
@@ -23,8 +23,13 @@ Deux surfaces, volontairement séparées :
 | Actions | créer, modifier, supprimer, téléverser | afficher et faire tourner |
 | Iframe | interdite (`frame-ancestors 'none'`) | autorisée pour Digipad uniquement |
 
-Une roue porte un titre et de 2 à 64 segments. Chaque segment a un libellé, une
-couleur de fond et, facultativement, une petite image.
+Une roue porte un titre et de 2 à 64 segments. Un segment est fait d'une couleur
+de fond, d'une image et d'un libellé. L'image est l'élément principal : elle
+occupe tout l'espace du quartier. Le libellé est facultatif et ne s'affiche que
+s'il est rempli — mais chaque segment demande au moins l'un des deux.
+
+À l'arrêt de la roue, le résultat s'affiche en grand par-dessus, avec l'image du
+segment gagnant et une salve de confettis.
 
 ---
 
@@ -136,14 +141,14 @@ server {
 ## 6. Utilisation
 
 1. Se connecter sur `https://wheel.nicolas-legay.fr` avec Google.
-2. Créer une roue, ajouter les segments (libellé, couleur, image).
+2. Créer une roue, ajouter les segments (image, couleur, libellé facultatif).
 3. Cocher **Roue publiée**, puis **Enregistrer**.
 4. Copier le code iframe et le coller dans une vignette Digipad :
 
 ```html
 <iframe src="https://wheel.nicolas-legay.fr/embed/VOTRE-UUID"
         width="480" height="640" style="border:0;max-width:100%"
-        title="Roue de la fortune" loading="lazy"></iframe>
+        title="Spin the Wheel" loading="lazy"></iframe>
 ```
 
 Décocher **Roue publiée** suffit à couper l'accès à l'iframe sans supprimer la roue.

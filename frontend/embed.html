@@ -5,22 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="referrer" content="no-referrer" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Roue de la fortune</title>
+    <title>Spin the Wheel</title>
     <link rel="stylesheet" href="/static/css/embed.css" />
   </head>
   <body class="embed">
     <main class="embed__contenu">
       <h1 class="embed__titre" id="titre"></h1>
 
-      <div class="embed__roue">
-        <canvas id="roue" width="480" height="480" aria-label="Roue de la fortune"></canvas>
+      <div class="embed__scene">
+        <div class="embed__roue">
+          <canvas id="roue" width="480" height="480" aria-label="Spin the Wheel"></canvas>
+        </div>
+
+        <!-- Annonce du résultat, superposée à la roue une fois l'arrêt fait. -->
+        <div class="embed__annonce" id="annonce" hidden>
+          <img class="embed__annonce-image" id="annonce-image" alt="" hidden />
+          <p class="embed__annonce-texte" id="annonce-texte"></p>
+        </div>
       </div>
 
       <button type="button" class="embed__bouton" id="tourner" disabled>Tourner</button>
 
-      <p class="embed__resultat" id="resultat" role="status" aria-live="polite"></p>
       <p class="embed__message" id="message" hidden></p>
+
+      <!-- Doublure textuelle pour les lecteurs d'écran : l'annonce visuelle est
+           décorative de leur point de vue, celle-ci est lue à voix haute. -->
+      <p class="visuellement-cache" id="resultat" role="status" aria-live="polite"></p>
     </main>
+
+    <canvas class="embed__confettis" id="confettis" aria-hidden="true"></canvas>
 
     <script type="module" src="/static/js/embed.js"></script>
   </body>
