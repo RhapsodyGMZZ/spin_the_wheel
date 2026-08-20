@@ -5,7 +5,7 @@
 // pas modifier une roue — les routes d'édition exigent une session, et le
 // cookie de session n'accompagne jamais une requête venue d'un autre site.
 
-import { createWheel, prefereMoinsDeMouvement } from './wheel.js';
+import { createWheel } from './wheel.js';
 import { createConfetti } from './confetti.js';
 
 // L'URL de la page est /embed/{id}.
@@ -56,11 +56,10 @@ function afficherAnnonce(tirage) {
   // Doublure pour les lecteurs d'écran, hors du visuel.
   resultat.textContent = libelle || `Segment ${tirage.index + 1}`;
 
-  // Les confettis sont purement décoratifs : contrairement à la rotation de la
-  // roue, les supprimer ne retire aucune information.
-  if (!prefereMoinsDeMouvement()) {
-    confettis.lancer();
-  }
+  // Les confettis font partie de l'annonce du résultat, comme la rotation fait
+  // partie du tirage : ils jouent toujours, réglage système ou pas. C'est un
+  // choix produit assumé (demandé explicitement).
+  confettis.lancer();
 }
 
 async function appeler(method, path) {
