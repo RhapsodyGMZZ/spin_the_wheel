@@ -56,9 +56,11 @@ function rafraichirApercu() {
 
 // --- Segments ---------------------------------------------------------------
 
+// Un nouveau quartier arrive sans texte : le libellé ne s'ajoute que si on
+// écrit dedans. Seule la couleur est proposée.
 function segmentVide(index) {
   return {
-    label: `Segment ${index + 1}`,
+    label: '',
     color: PALETTE[index % PALETTE.length],
     image_id: '',
     image_url: '',
@@ -226,19 +228,6 @@ async function enregistrer() {
   }
   if (segments.length < 2) {
     status(zoneStatut, 'Une roue demande au moins 2 segments.', 'erreur');
-    return;
-  }
-  // Le libellé est facultatif, l'image aussi — mais un quartier sans l'un ni
-  // l'autre n'aurait rien à montrer, ni rien à annoncer au tirage.
-  const sansContenu = segments.findIndex(
-    (seg) => seg.label.trim() === '' && !seg.image_id,
-  );
-  if (sansContenu >= 0) {
-    status(
-      zoneStatut,
-      `Segment ${sansContenu + 1} : ajoutez un libellé ou une image.`,
-      'erreur',
-    );
     return;
   }
 

@@ -26,7 +26,8 @@ Deux surfaces, volontairement séparées :
 Une roue porte un titre et de 2 à 64 segments. Un segment est fait d'une couleur
 de fond, d'une image et d'un libellé. L'image est l'élément principal : elle
 occupe tout l'espace du quartier. Le libellé est facultatif et ne s'affiche que
-s'il est rempli — mais chaque segment demande au moins l'un des deux.
+s'il est rempli. Les deux peuvent être omis : le segment est alors un simple
+aplat de couleur, annoncé par son rang au tirage.
 
 À l'arrêt de la roue, le résultat s'affiche en grand par-dessus, avec l'image du
 segment gagnant et une salve de confettis.

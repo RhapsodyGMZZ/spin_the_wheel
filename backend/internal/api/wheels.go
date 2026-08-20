@@ -270,14 +270,6 @@ func (s *Server) putSegments(w http.ResponseWriter, r *http.Request) {
 			}
 			seg.ImageID = imgID
 		}
-
-		// Le libellé est facultatif, l'image aussi — mais pas les deux à la
-		// fois : un quartier sans rien à montrer ne serait qu'un aplat de
-		// couleur, et l'annonce du tirage n'aurait rien à afficher.
-		if label == "" && seg.ImageID.IsZero() {
-			s.writeError(w, r, invalid("Segment %d : ajoutez un libellé ou une image.", i+1), "")
-			return
-		}
 		segs = append(segs, seg)
 	}
 
